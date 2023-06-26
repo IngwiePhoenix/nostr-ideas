@@ -49,13 +49,13 @@ And now, a Nostr note in comparison:
 
 The following keys have effectively the exact same meaning across both protocols:
 
-Matrix             | Nostr        | Meaning
--------------------+--------------+---------------------------------------
-`content`          | `content`    | The message/note content.
-`sender`           | `pubkey`     | Who sent it?
-`origin_server_ts` | `created_at` | When was this event published/created?
-`event_id`         | `id`         | Unique event identifier
-`type`             | `kind`       | The type of event
+| Matrix             | Nostr        | Meaning
+| -------------------|--------------|---------------------------------------
+| `content`          | `content`    | The message/note content.
+| `sender`           | `pubkey`     | Who sent it?
+| `origin_server_ts` | `created_at` | When was this event published/created?
+| `event_id`         | `id`         | Unique event identifier
+| `type`             | `kind`       | The type of event
 
 Though there are a few differences in how they are typed and used. In Nostr, event types are nummeric, whilst in Matrix they have a domain-style identifier. And, in Matrix, content can be of a different type, whilst in Nostr, it is plain text most of the time.
 
@@ -63,9 +63,9 @@ And this goes throughout the **entire** protocol. Hence, why I think it would le
 
 ## The goal
 
-Right now, (NIP-04)[https://github.com/nostr-protocol/nips/blob/master/04.md] is solid and serviceable - but it shares the same problem as with Matrix. It is only Message-Level Encryption. That means all the other metadata - from who to who, when, how long, ... - is still present. And, public. Like, fully public. You can totally query just about any Nostr relay for `kind:4` events with ease.
+Right now, [NIP-04](https://github.com/nostr-protocol/nips/blob/master/04.md) is solid and serviceable - but it shares the same problem as with Matrix. It is only Message-Level Encryption. That means all the other metadata - from who to who, when, how long, ... - is still present. And, public. Like, fully public. You can totally query just about any Nostr relay for `kind:4` events with ease.
 
-And, (NIP-28)[https://github.com/nostr-protocol/nips/blob/master/28.md] is not encrypted and fully public entirely. Encrypted group chats do not exist, period.
+And, [NIP-28](https://github.com/nostr-protocol/nips/blob/master/28.md) is not encrypted and fully public entirely. Encrypted group chats do not exist, period.
 
 My goal is to use the vast development that Matrix has seen in order to dramatically improve Nostr's chatting capabilities. 
 
@@ -116,63 +116,66 @@ Disclaimer: I suck at cryptography. (:
 
 Before we can adapt anything into Nostr, it is important to list out all the potential types of messages, and see if there is equivalents within Nostr already.
 
-(To see it in the Matrix spec, see (7.1. Types of room events)[https://spec.matrix.org/v1.7/client-server-api/#types-of-room-events])
+(To see it in the Matrix spec, see [7.1. Types of room events](https://spec.matrix.org/v1.7/client-server-api/#types-of-room-events))
 
-Matrix `type`                  | Nostr `kind` | Is...
-`m.room.create`                | 40 (-ish)    | the root event of a room, it's creation.
-`m.room.name`                  | 41           | an event to change the room name. Think updated `kind:0`.
-`m.room.avatar`                | 41           | the same as `.name`, but for it's avatar/icon.
-`m.room.topic`                 | 41           | again the same as above, but for it's description.
-`m.room.join_rules`            | None         | a definition who can and can not join. Irrelevant for Nostr, probably.
-`m.room.canonical_alias`       | 41?          | kinda like NIP-05 - a proper name associated to gibberish.
-`m.room.history_visibility`    | 41?          | the definition of what can be seen of the backlog.
-`m.room.encryption`            | None         | complicated... It denotes encryption information.
-`m.room.member`                | None?        | basically an invite, and also the current status of membership.
-`m.room.power_level`           | None         | an object describing permissions. I.e.: When a user can post etc.
-`m.room.message`               | 42           | an actual message being sent. (And there's many types of that.)[https://spec.matrix.org/v1.7/client-server-api/#mroommessage-msgtypes]
-`m.room.pinned_events`         | None         | pinned messages; stuff that is important or alike.
-`m.room.tombstone`             | None?         | Room has moved to a new location or is otherwise deleted.
-`m.direct`                     | None?        | sent by the Matrix server to say which rooms are actually DMs. Irrelevant; we have kinds for that :)
-`m.call.answer`                | None         | an event indicating someone picked up a call.
-`m.call.candidates`            | None         | basically WebRTC ICE stuff.
-`m.call.hangup`                | None         | just a call party member ending the call.
-`m.call.invite`                | None         | someone inviting someone else into a call.
-`m.call.negotiate`             | None         | how clients negotiate capabilities of a call. Probably preceeds `.candidates`.
-`m.call.reject`                | None         | like `.hangup`, but the user never even answered.
-`m.call.select_answer`         | None         | a way to tell everyone who you are now calling with.
-`m.typing`                     | None         | a typing indicator. Should DEFINITIVELY be an ephemeral event. Sent by server.
-`m.receipt`                    | None         | an indicator that a user read a message.
-`m.read`                       | None         | is sent along `m.receipt` as a "who read your message" kinda thing.
-`m.fully_read`                 | None         | sent by server as part of the state, indicating where they stopped reading. Possibly not important for Nostr.
-`m.presence`                   | None         | is an Offline/Online etc. indicator.
-`m.policy.rule.user`           | None         | an elaborate description of a moderation. Kicks, bans, etc.
-`m.policy.rule.room`           | None         | the same as above, but for a room. Likely useless for Nostr.
-`m.policy.rule.server`         | None         | definitively not applicable to Nostr.
-`m.space`                      | 41-ish       | an event to explicitly mark this as a Space, rather than a simple room. (Almost everything in Matrix is a room.)
-`m.space.child`/`.parent`      | None         | used to create a room list associated to a space.
-`m.relates_to`                 | `tag:e`      | Establishes event relations. Often used for replies or edits.
-`m.reaction`                   | 25           | a reaction to an event.
+| Matrix `type`                  | Nostr `kind` | Is...
+|--------------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------
+| `m.room.create`                | 40 (-ish)    | the root event of a room, it's creation.
+| `m.room.name`                  | 41           | an event to change the room name. Think updated `kind:0`.
+| `m.room.avatar`                | 41           | the same as `.name`, but for it's avatar/icon.
+| `m.room.topic`                 | 41           | again the same as above, but for it's description.
+| `m.room.join_rules`            | None         | a definition who can and can not join. Irrelevant for Nostr, probably.
+| `m.room.canonical_alias`       | 41?          | kinda like NIP-05 - a proper name associated to gibberish.
+| `m.room.history_visibility`    | 41?          | the definition of what can be seen of the backlog.
+| `m.room.encryption`            | None         | complicated... It denotes encryption information.
+| `m.room.member`                | None?        | basically an invite, and also the current status of membership.
+| `m.room.power_level`           | None         | an object describing permissions. I.e.: When a user can post etc.
+| `m.room.message`               | 42           | an actual message being sent. [And there's many types of that.](https://spec.matrix.org/v1.7/client-server-api/#mroommessage-msgtypes)
+| `m.room.pinned_events`         | None         | pinned messages; stuff that is important or alike.
+| `m.room.tombstone`             | None?         | Room has moved to a new location or is otherwise deleted.
+| `m.direct`                     | None?        | sent by the Matrix server to say which rooms are actually DMs. Irrelevant; we have kinds for that :)
+| `m.call.answer`                | None         | an event indicating someone picked up a call.
+| `m.call.candidates`            | None         | basically WebRTC ICE stuff.
+| `m.call.hangup`                | None         | just a call party member ending the call.
+| `m.call.invite`                | None         | someone inviting someone else into a call.
+| `m.call.negotiate`             | None         | how clients negotiate capabilities of a call. Probably preceeds `.candidates`.
+| `m.call.reject`                | None         | like `.hangup`, but the user never even answered.
+| `m.call.select_answer`         | None         | a way to tell everyone who you are now calling with.
+| `m.typing`                     | None         | a typing indicator. Should DEFINITIVELY be an ephemeral event. Sent by server.
+| `m.receipt`                    | None         | an indicator that a user read a message.
+| `m.read`                       | None         | is sent along `m.receipt` as a "who read your message" kinda thing.
+| `m.fully_read`                 | None         | sent by server as part of the state, indicating where they stopped reading. Possibly not important for Nostr.
+| `m.presence`                   | None         | is an Offline/Online etc. indicator.
+| `m.policy.rule.user`           | None         | an elaborate description of a moderation. Kicks, bans, etc.
+| `m.policy.rule.room`           | None         | the same as above, but for a room. Likely useless for Nostr.
+| `m.policy.rule.server`         | None         | definitively not applicable to Nostr.
+| `m.space`                      | 41-ish       | an event to explicitly mark this as a Space, rather than a simple room. (Almost everything in Matrix is a room.)
+| `m.space.child`/`.parent`      | None         | used to create a room list associated to a space.
+| `m.relates_to`                 | `tag:e`      | Establishes event relations. Often used for replies or edits.
+| `m.reaction`                   | 25           | a reaction to an event.
 
 In addition, There are also a few different types of `m.room.message`. Whilst those aren't important for a server, they should be for a client, normally. In Nostr, this probably doesn't do a whole lot. However, they could be respected and shown appropreately as a separate tag.
 
-`m.room.message.msgType` | Is...
-`m.text`                 | a plain text message.
-`m.emote`                | an action, like `/me sips coffee.`. Just a fancy `m.text`, really.
-`m.notice`               | usually a bot message, announcement or something minor.
-`m.image`                | a post containing just an image.
-`m.file`                 | a file that is being shared. Could be useful to just specify an IPFS CID instead, perhaps.
-`m.audio`                | a sound file; often used for voice messages.
-`m.location`             | a set of geo-coordinates.
-`m.video`                | like image, audio and file - but a video.
-`m.sticker`              | one big sticker. Likely part of a set, too.
+| `m.room.message.msgType` | Is...
+|--------------------------|------------------------------------------------------------------------------------------
+| `m.text`                 | a plain text message.
+| `m.emote`                | an action, like `/me sips coffee.`. Just a fancy `m.text`, really.
+| `m.notice`               | usually a bot message, announcement or something minor.
+| `m.image`                | a post containing just an image.
+| `m.file`                 | a file that is being shared. Could be useful to just specify an IPFS CID instead, perhaps.
+| `m.audio`                | a sound file; often used for voice messages.
+| `m.location`             | a set of geo-coordinates.
+| `m.video`                | like image, audio and file - but a video.
+| `m.sticker`              | one big sticker. Likely part of a set, too.
 
 And these are some events specific for moderation:
 
-Type    | Is...
-`m.ban` | a recommendation for a ban.
+| Type    | Is...
+|---------|----------------------------
+| `m.ban` | a recommendation for a ban.
 
 
-I omitted most of the E2E stuff for now, but it's in (11.12)[https://spec.matrix.org/v1.7/client-server-api/#end-to-end-encryption]. The used encryptions are noted here: (11.12.4. Message Algorythmns)[https://spec.matrix.org/v1.7/client-server-api/#molmv1curve25519-aes-sha2]. That last section in particular goes a little over my head, I will admit... The long-story-short is, however, that OLM's spec is used for most of it.
+I omitted most of the E2E stuff for now, but it's in [11.12](https://spec.matrix.org/v1.7/client-server-api/#end-to-end-encryption). The used encryptions are noted here: [11.12.4. Message Algorythmns](https://spec.matrix.org/v1.7/client-server-api/#molmv1curve25519-aes-sha2). That last section in particular goes a little over my head, I will admit... The long-story-short is, however, that OLM's spec is used for most of it.
 
 In addition, I also ignored a few state events that indicate the current situation of the user. In Nostr, there is no such thing as a server; it ALL happens on the client side, and thus this stuff should also be resolved there. However, since not everything in Nostr is just a `m.room.*`, it's also far easier to tell certain things apart.
 
@@ -183,7 +186,7 @@ You may have noticed the many `None` declarations in the table above - but, this
 But we can summise that...
 
 * `m.room.*`: All events responsible for whatever happens inside a room.
-* `m.call.*`: Responsible for calling. Matrix leans heavily on WebRTC. Now, since (Nostr Nets)[https://nostrnests.com] are a thing, I won't bother with that, for now.
+* `m.call.*`: Responsible for calling. Matrix leans heavily on WebRTC. Now, since [Nostr Nets](https://nostrnests.com) are a thing, I won't bother with that, for now.
 * `m.policy.*`: These are all moderation events.
 
 The rest are basically state events that have some significance though; maybe you do want to share a read-receipt or a typing notification.
@@ -212,17 +215,18 @@ From here, the attached file via it's URL can have a small description of what t
 
 ### TL;DR: Kinds
 
-`kind` | Purpose
-14400  | Channel create
-14401  | Channel metadata update
-14402  | Channel message
-104405 | Owner: Set permission state
-14410  | Mod: Delete message
-14411  | Mod: Kick user
-14412  | Mod: Ban user
-14420  | Zone creation
-14421  | Zone metadata update
-104422 | Zone channel list
+| `kind` | Purpose
+|--------|----------------------------
+| 14400  | Channel create
+| 14401  | Channel metadata update
+| 14402  | Channel message
+| 104405 | Owner: Set permission state
+| 14410  | Mod: Delete message
+| 14411  | Mod: Kick user
+| 14412  | Mod: Ban user
+| 14420  | Zone creation
+| 14421  | Zone metadata update
+| 104422 | Zone channel list
 
 ### DMs, Rooms, Spaces.
 
@@ -326,7 +330,7 @@ A zone's description is expected to be long and possibly formatted in Markdown. 
 
 Subsequent changes can be done via `kind:14421`.
 
-However, compared to the creation of a channel, a zone has several categories and channels under it. (Pinstr)[https://pinstr.app/] already does lists and it is a noteable shoutout at this point. Since these channel lists change, this is a replaceable event.
+However, compared to the creation of a channel, a zone has several categories and channels under it. [Pinstr](https://pinstr.app/) already does lists and it is a noteable shoutout at this point. Since these channel lists change, this is a replaceable event.
 
 The basic structure is very simple:
 
